@@ -34,7 +34,7 @@ MODULE_DEVICE_TABLE(hid, magic_trackpads
 #define MAX_FINGER_ORIENTATION    16384
 
 #define PRESSURE_CLICK_THRESHOLD 50
-#define PRESSURE_FORCE_THRESHOLD 140
+#define PRESSURE_FORCE_THRESHOLD 200
 
 /* list of device capability bits */
 #define HAS_INTEGRATED_BUTTON    1
@@ -276,19 +276,33 @@ static int raw_event(struct hid_device *hdev, struct hid_report *report, u8 *dat
     } else if (pressure >= PRESSURE_FORCE_THRESHOLD && status == 1) {
         bforce(hdev);
         status = 2;
-        input_report_key(device->input, BTN_LEFT, 0);
-        input_report_key(device->input, BTN_MIDDLE, 1);
-    } else if (pressure > PRESSURE_CLICK_THRESHOLD && pressure < PRESSURE_FORCE_THRESHOLD && status == 2) {
-        bup(hdev);
+        //input_report_key(device->input, BTN_LEFT, 0);
+        //input_report_key(device->input, BTN_MIDDLE, 1);
+   // } else if (pressure > PRESSURE_CLICK_THRESHOLD && pressure < PRESSURE_FORCE_THRESHOLD && status == 2) {
+   //     bup(hdev);
+   //     status = 3;
+   //     input_report_key(device->input, BTN_LEFT, 0);
+   //	  input_report_key(device->input, BTN_MIDDLE, 0);
+    } else if (pressure <= PRESSURE_FORCE_THRESHOLD && status ==2) {
         status = 3;
+	//continue dragging
+    } else if (pressure <= PRESSURE_CLICK_THRESHOLD && status == 3) {
+	status = 4;
+        //continue dragging
+    } else if (pressure > PRESSURE_CLICK_THRESHOLD && status == 4) {
+        status = 5;
+        bup(hdev);
         input_report_key(device->input, BTN_LEFT, 0);
-        input_report_key(device->input, BTN_MIDDLE, 0);
+	// release drag lock
+    } else if (pressure < PRESSURE_CLICK_THRESHOLD && status == 5) {
+        status = 0;
+
     } else if (pressure <= PRESSURE_CLICK_THRESHOLD && status == 1) {
         bup(hdev);
         status = 0;
         input_report_key(device->input, BTN_LEFT, 0);
-    } else if (pressure <= PRESSURE_CLICK_THRESHOLD && status == 3) {
-        status = 0;
+ //  } else if (pressure <= PRESSURE_CLICK_THRESHOLD && status == 3) {
+ //       status = 0;
     }
 
     return 0;
